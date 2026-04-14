@@ -17,8 +17,8 @@ pub struct Profile {
 }
 
 pub fn settings_path() -> PathBuf {
-    let config_dir = dirs::config_dir().expect("cannot resolve config directory");
-    config_dir.join("launch-claude-code").join("settings.json")
+    let home = dirs::home_dir().expect("cannot resolve home directory");
+    home.join(".config").join("launch-claude-code").join("settings.json")
 }
 
 pub fn load_settings() -> Result<Settings, Box<dyn std::error::Error>> {
