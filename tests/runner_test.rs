@@ -13,6 +13,7 @@ fn test_build_env_vars_basic() {
     assert_eq!(env.get("ANTHROPIC_BASE_URL").unwrap(), "http://localhost:11434/v1");
     assert!(!env.contains_key("ANTHROPIC_API_KEY"));
     assert_eq!(env.get("ANTHROPIC_AUTH_TOKEN").unwrap(), "ollama");
+    assert_eq!(env.get("ANTHROPIC_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(), "gemma4");

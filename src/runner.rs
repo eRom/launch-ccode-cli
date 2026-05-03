@@ -39,6 +39,7 @@ pub fn build_env_vars(
     } else if !auth_token.is_empty() {
         env.insert("ANTHROPIC_AUTH_TOKEN".into(), auth_token);
     }
+    env.insert("ANTHROPIC_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), model.clone());
