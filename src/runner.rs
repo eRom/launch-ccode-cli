@@ -30,10 +30,15 @@ pub fn build_env_vars(
     profile: &Profile,
 ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
     let model = expand_env_vars(&profile.model)?;
+    let api_key = expand_env_vars(&profile.api_key)?;
+    let auth_token = expand_env_vars(&profile.auth_token)?;
     let mut env = HashMap::new();
     env.insert("ANTHROPIC_BASE_URL".into(), expand_env_vars(&profile.base_url)?);
-    env.insert("ANTHROPIC_API_KEY".into(), expand_env_vars(&profile.api_key)?);
-    env.insert("ANTHROPIC_AUTH_TOKEN".into(), expand_env_vars(&profile.auth_token)?);
+    if !api_key.is_empty() {
+        env.insert("ANTHROPIC_API_KEY".into(), api_key);
+    } else if !auth_token.is_empty() {
+        env.insert("ANTHROPIC_AUTH_TOKEN".into(), auth_token);
+    }
     env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), model.clone());

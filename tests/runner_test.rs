@@ -11,7 +11,7 @@ fn test_build_env_vars_basic() {
     let env = lcc::runner::build_env_vars(&profile).unwrap();
 
     assert_eq!(env.get("ANTHROPIC_BASE_URL").unwrap(), "http://localhost:11434/v1");
-    assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "");
+    assert!(!env.contains_key("ANTHROPIC_API_KEY"));
     assert_eq!(env.get("ANTHROPIC_AUTH_TOKEN").unwrap(), "ollama");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").unwrap(), "gemma4");
@@ -63,6 +63,35 @@ fn test_build_env_vars_with_custom_env() {
     let env = lcc::runner::build_env_vars(&profile).unwrap();
     assert_eq!(env.get("MY_VAR").unwrap(), "hello");
     assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "sk-xxx");
+    assert!(!env.contains_key("ANTHROPIC_AUTH_TOKEN"));
+}
+
+#[test]
+fn test_build_env_vars_api_key_takes_precedence() {
+    let profile = lcc::config::Profile {
+        model: "x".into(),
+        base_url: "x".into(),
+        api_key: "sk-real".into(),
+        auth_token: "should-be-ignored".into(),
+        env: None,
+    };
+    let env = lcc::runner::build_env_vars(&profile).unwrap();
+    assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "sk-real");
+    assert!(!env.contains_key("ANTHROPIC_AUTH_TOKEN"));
+}
+
+#[test]
+fn test_build_env_vars_empty_api_key_uses_auth_token() {
+    let profile = lcc::config::Profile {
+        model: "x".into(),
+        base_url: "x".into(),
+        api_key: "".into(),
+        auth_token: "ollama".into(),
+        env: None,
+    };
+    let env = lcc::runner::build_env_vars(&profile).unwrap();
+    assert!(!env.contains_key("ANTHROPIC_API_KEY"));
+    assert_eq!(env.get("ANTHROPIC_AUTH_TOKEN").unwrap(), "ollama");
 }
 
 #[test]
