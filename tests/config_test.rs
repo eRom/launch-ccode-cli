@@ -1,7 +1,3 @@
-use std::io::Write;
-use tempfile::NamedTempFile;
-
-// On teste le parsing directement via serde
 #[test]
 fn test_parse_valid_settings() {
     let json = r#"{
