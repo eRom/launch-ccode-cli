@@ -63,3 +63,43 @@ fn test_get_profile_not_found() {
     let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
     assert!(settings.profiles.get("nope").is_none());
 }
+
+#[test]
+fn test_expand_env_vars_simple() {
+    std::env::set_var("LCC_TEST_EXPAND_SIMPLE", "hello");
+    let s = lcc::config::expand_env_vars("${LCC_TEST_EXPAND_SIMPLE}").unwrap();
+    assert_eq!(s, "hello");
+}
+
+#[test]
+fn test_expand_env_vars_no_placeholder() {
+    let s = lcc::config::expand_env_vars("plain text").unwrap();
+    assert_eq!(s, "plain text");
+}
+
+#[test]
+fn test_expand_env_vars_partial() {
+    std::env::set_var("LCC_TEST_EXPAND_PARTIAL", "secret");
+    let s = lcc::config::expand_env_vars("Bearer ${LCC_TEST_EXPAND_PARTIAL}").unwrap();
+    assert_eq!(s, "Bearer secret");
+}
+
+#[test]
+fn test_expand_env_vars_missing() {
+    let result = lcc::config::expand_env_vars("${LCC_TEST_NEVER_DEFINED_XYZ}");
+    assert!(result.is_err());
+    let msg = format!("{}", result.unwrap_err());
+    assert!(msg.contains("LCC_TEST_NEVER_DEFINED_XYZ"));
+}
+
+#[test]
+fn test_expand_env_vars_unclosed() {
+    let result = lcc::config::expand_env_vars("${UNCLOSED");
+    assert!(result.is_err());
+}
+
+#[test]
+fn test_expand_env_vars_empty() {
+    let s = lcc::config::expand_env_vars("").unwrap();
+    assert_eq!(s, "");
+}

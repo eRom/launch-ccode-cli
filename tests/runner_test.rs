@@ -8,7 +8,7 @@ fn test_build_env_vars_basic() {
         env: None,
     };
 
-    let env = lcc::runner::build_env_vars(&profile);
+    let env = lcc::runner::build_env_vars(&profile).unwrap();
 
     assert_eq!(env.get("ANTHROPIC_BASE_URL").unwrap(), "http://localhost:11434/v1");
     assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "");
@@ -18,6 +18,33 @@ fn test_build_env_vars_basic() {
     assert_eq!(env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("CLAUDE_CODE_SUBAGENT_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("CLAUDE_CODE_ATTRIBUTION_HEADER").unwrap(), "0");
+}
+
+#[test]
+fn test_build_env_vars_expands_placeholders() {
+    std::env::set_var("LCC_TEST_RUNNER_KEY", "sk-real-secret");
+    let profile = lcc::config::Profile {
+        model: "deepseek/deepseek-v4-pro".to_string(),
+        base_url: "https://openrouter.ai/api/v1".to_string(),
+        api_key: "${LCC_TEST_RUNNER_KEY}".to_string(),
+        auth_token: "openrouter".to_string(),
+        env: None,
+    };
+    let env = lcc::runner::build_env_vars(&profile).unwrap();
+    assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "sk-real-secret");
+}
+
+#[test]
+fn test_build_env_vars_missing_var_errors() {
+    let profile = lcc::config::Profile {
+        model: "x".to_string(),
+        base_url: "x".to_string(),
+        api_key: "${LCC_TEST_RUNNER_MISSING_QQQ}".to_string(),
+        auth_token: "x".to_string(),
+        env: None,
+    };
+    let result = lcc::runner::build_env_vars(&profile);
+    assert!(result.is_err());
 }
 
 #[test]
@@ -33,7 +60,7 @@ fn test_build_env_vars_with_custom_env() {
         env: Some(custom),
     };
 
-    let env = lcc::runner::build_env_vars(&profile);
+    let env = lcc::runner::build_env_vars(&profile).unwrap();
     assert_eq!(env.get("MY_VAR").unwrap(), "hello");
     assert_eq!(env.get("ANTHROPIC_API_KEY").unwrap(), "sk-xxx");
 }

@@ -16,6 +16,25 @@ pub struct Profile {
     pub env: Option<HashMap<String, String>>,
 }
 
+pub fn expand_env_vars(s: &str) -> Result<String, Box<dyn std::error::Error>> {
+    let mut out = String::with_capacity(s.len());
+    let mut rest = s;
+    while let Some(start) = rest.find("${") {
+        out.push_str(&rest[..start]);
+        let after = &rest[start + 2..];
+        let end = after
+            .find('}')
+            .ok_or_else(|| format!("Unclosed variable placeholder in: {s}"))?;
+        let var_name = &after[..end];
+        let value = std::env::var(var_name)
+            .map_err(|_| format!("Environment variable not set: {var_name}"))?;
+        out.push_str(&value);
+        rest = &after[end + 1..];
+    }
+    out.push_str(rest);
+    Ok(out)
+}
+
 pub fn settings_path() -> PathBuf {
     let home = dirs::home_dir().expect("cannot resolve home directory");
     home.join(".config").join("launch-claude-code").join("settings.json")

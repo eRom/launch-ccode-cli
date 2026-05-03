@@ -1,4 +1,4 @@
-use crate::config::{load_settings, Profile};
+use crate::config::{expand_env_vars, load_settings, Profile};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
@@ -26,24 +26,27 @@ pub fn find_claude() -> Result<PathBuf, Box<dyn std::error::Error>> {
     .into())
 }
 
-pub fn build_env_vars(profile: &Profile) -> HashMap<String, String> {
+pub fn build_env_vars(
+    profile: &Profile,
+) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
+    let model = expand_env_vars(&profile.model)?;
     let mut env = HashMap::new();
-    env.insert("ANTHROPIC_BASE_URL".into(), profile.base_url.clone());
-    env.insert("ANTHROPIC_API_KEY".into(), profile.api_key.clone());
-    env.insert("ANTHROPIC_AUTH_TOKEN".into(), profile.auth_token.clone());
-    env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), profile.model.clone());
-    env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), profile.model.clone());
-    env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), profile.model.clone());
-    env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), profile.model.clone());
+    env.insert("ANTHROPIC_BASE_URL".into(), expand_env_vars(&profile.base_url)?);
+    env.insert("ANTHROPIC_API_KEY".into(), expand_env_vars(&profile.api_key)?);
+    env.insert("ANTHROPIC_AUTH_TOKEN".into(), expand_env_vars(&profile.auth_token)?);
+    env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), model.clone());
+    env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), model.clone());
+    env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), model.clone());
+    env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), model);
     env.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".into(), "0".into());
 
     if let Some(custom) = &profile.env {
         for (k, v) in custom {
-            env.insert(k.clone(), v.clone());
+            env.insert(k.clone(), expand_env_vars(v)?);
         }
     }
 
-    env
+    Ok(env)
 }
 
 pub fn build_claude_args(model: &str, extra: &[String]) -> Vec<String> {
@@ -68,8 +71,9 @@ pub fn run(profil: &str, extra_args: &[String]) -> Result<(), Box<dyn std::error
     })?;
 
     let claude_path = find_claude()?;
-    let env_vars = build_env_vars(profile);
-    let args = build_claude_args(&profile.model, extra_args);
+    let env_vars = build_env_vars(profile)?;
+    let model = expand_env_vars(&profile.model)?;
+    let args = build_claude_args(&model, extra_args);
 
     let status = Command::new(&claude_path)
         .args(&args)
