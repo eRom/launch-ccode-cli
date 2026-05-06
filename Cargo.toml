@@ -1,7 +1,7 @@
 [package]
 name = "lcc"
 version = "0.1.0"
-edition = "2021"
+edition = "2024"
 authors = ["Romain Ecarnot <romain.ecarnot@gmail.com>"]
 description = "A lightweight launcher to run Claude Code against any OpenAI/Anthropic-compatible provider (OpenRouter, Ollama, vLLM, …) with named profiles and runtime model switching."
 license = "MIT"

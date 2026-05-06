@@ -117,7 +117,8 @@ fn test_parse_valid_settings_multi() {
 
 #[test]
 fn test_expand_env_vars_simple() {
-    std::env::set_var("LCC_TEST_EXPAND_SIMPLE", "hello");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { std::env::set_var("LCC_TEST_EXPAND_SIMPLE", "hello") };
     let s = lcc::config::expand_env_vars("${LCC_TEST_EXPAND_SIMPLE}").unwrap();
     assert_eq!(s, "hello");
 }
@@ -130,7 +131,8 @@ fn test_expand_env_vars_no_placeholder() {
 
 #[test]
 fn test_expand_env_vars_partial() {
-    std::env::set_var("LCC_TEST_EXPAND_PARTIAL", "secret");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { std::env::set_var("LCC_TEST_EXPAND_PARTIAL", "secret") };
     let s = lcc::config::expand_env_vars("Bearer ${LCC_TEST_EXPAND_PARTIAL}").unwrap();
     assert_eq!(s, "Bearer secret");
 }

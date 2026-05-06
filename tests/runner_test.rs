@@ -26,7 +26,8 @@ fn test_build_env_vars_basic() {
 
 #[test]
 fn test_build_env_vars_expands_placeholders() {
-    std::env::set_var("LCC_TEST_RUNNER_KEY", "sk-real-secret");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { std::env::set_var("LCC_TEST_RUNNER_KEY", "sk-real-secret") };
     let profile = SingleProfile {
         model: "deepseek/deepseek-v4-pro".to_string(),
         base_url: "https://openrouter.ai/api/v1".to_string(),
@@ -209,7 +210,8 @@ fn test_build_env_vars_multi_no_slot_does_not_set_picker_vars() {
 
 #[test]
 fn test_build_env_vars_multi_id_expansion() {
-    std::env::set_var("LCC_TEST_MULTI_PROVIDER", "deepseek");
+    // TODO: Audit that the environment access only happens in single-threaded code.
+    unsafe { std::env::set_var("LCC_TEST_MULTI_PROVIDER", "deepseek") };
     let mut models = HashMap::new();
     models.insert("p".to_string(), entry("${LCC_TEST_MULTI_PROVIDER}/v4-pro", Some(Slot::Sonnet), None));
     let profile = MultiProfile {
