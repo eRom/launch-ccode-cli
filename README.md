@@ -4,6 +4,8 @@ A lightweight Rust launcher that lets you run the official **Claude Code** CLI
 against any OpenAI/Anthropic-compatible provider — OpenRouter, Ollama, vLLM,
 LiteLLM, your own gateway — without juggling environment variables by hand.
 
+![lcc — Claude Code's /model picker showing the multi-model OpenRouter profile (opus → owl-alpha, sonnet → deepseek-v4-pro, haiku → deepseek-v4-flash, custom → kimi)](./ui.png)
+
 ```bash
 lcc start --profil openrouter
 ```
