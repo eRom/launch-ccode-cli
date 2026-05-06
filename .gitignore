@@ -1,7 +1,8 @@
-.gerber-slug
-.cave/
-
-
-# Added by cargo
-
+# Cargo build output
 /target
+
+# Local development
+test-rom/
+
+# Personal session memory (gerber)
+.cave/
