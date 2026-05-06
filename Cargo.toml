@@ -8,6 +8,7 @@ license = "MIT"
 readme = "README.md"
 keywords = ["claude", "claude-code", "openrouter", "llm", "launcher"]
 categories = ["command-line-utilities", "development-tools"]
+repository = "https://github.com/eRom/launch-ccode-cli"
 
 [dependencies]
 clap = { version = "4", features = ["derive"] }

@@ -26,7 +26,7 @@ Requires Rust 1.75+ (edition 2021) and the official `claude` CLI installed
 ([Claude Code docs](https://docs.claude.com/en/docs/claude-code/overview)).
 
 ```bash
-git clone https://github.com/<you>/launch-ccode-cli.git
+git clone https://github.com/eRom/launch-ccode-cli.git
 cd launch-ccode-cli
 cargo install --path .
 ```
