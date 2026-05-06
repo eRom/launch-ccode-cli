@@ -1,0 +1,40 @@
+{
+  "profiles": {
+    "ollama-local": {
+      "model": "gemma4",
+      "base_url": "http://localhost:11434/v1",
+      "api_key": "",
+      "auth_token": "ollama"
+    },
+    "openrouter": {
+      "base_url": "https://openrouter.ai/api",
+      "auth_token": "${OPENROUTER_API_KEY}",
+      "default": "deepseek-v4-pro",
+      "models": {
+        "owl-alpha": {
+          "id": "openrouter/owl-alpha",
+          "slot": "opus"
+        },
+        "deepseek-v4-pro": {
+          "id": "deepseek/deepseek-v4-pro",
+          "slot": "sonnet"
+        },
+        "deepseek-v4-flash": {
+          "id": "deepseek/deepseek-v4-flash",
+          "slot": "haiku"
+        },
+        "kimi": {
+          "id": "moonshotai/kimi-k2.6",
+          "slot": "custom",
+          "description": "Moonshot Kimi K2.6"
+        },
+        "gemma-4-26b": {
+          "id": "google/gemma-4-26b-a4b-it"
+        },
+        "glm-5.1": {
+          "id": "z-ai/glm-5.1"
+        }
+      }
+    }
+  }
+}

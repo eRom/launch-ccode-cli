@@ -1,5 +1,7 @@
+use lcc::config::Profile;
+
 #[test]
-fn test_parse_valid_settings() {
+fn test_parse_valid_settings_single() {
     let json = r#"{
         "profiles": {
             "gemma4": {
@@ -13,12 +15,14 @@ fn test_parse_valid_settings() {
 
     let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
     assert_eq!(settings.profiles.len(), 1);
-    let profile = settings.profiles.get("gemma4").unwrap();
-    assert_eq!(profile.model, "gemma4");
-    assert_eq!(profile.base_url, "http://localhost:11434/v1");
-    assert_eq!(profile.api_key, "");
-    assert_eq!(profile.auth_token, "ollama");
-    assert!(profile.env.is_none());
+    let Profile::Single(p) = settings.profiles.get("gemma4").unwrap() else {
+        panic!("expected Single variant");
+    };
+    assert_eq!(p.model, "gemma4");
+    assert_eq!(p.base_url, "http://localhost:11434/v1");
+    assert_eq!(p.api_key, "");
+    assert_eq!(p.auth_token, "ollama");
+    assert!(p.env.is_none());
 }
 
 #[test]
@@ -38,8 +42,10 @@ fn test_parse_profile_with_env() {
     }"#;
 
     let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
-    let profile = settings.profiles.get("test").unwrap();
-    let env = profile.env.as_ref().unwrap();
+    let Profile::Single(p) = settings.profiles.get("test").unwrap() else {
+        panic!("expected Single variant");
+    };
+    let env = p.env.as_ref().unwrap();
     assert_eq!(env.get("CLAUDE_CODE_AUTO_COMPACT_WINDOW").unwrap(), "50000");
 }
 
@@ -58,10 +64,55 @@ fn test_parse_missing_required_field() {
 }
 
 #[test]
-fn test_get_profile_not_found() {
+fn test_parse_get_profile_not_found() {
     let json = r#"{"profiles": {}}"#;
     let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
     assert!(settings.profiles.get("nope").is_none());
+}
+
+#[test]
+fn test_parse_valid_settings_multi() {
+    let json = r#"{
+        "profiles": {
+            "openrouter": {
+                "base_url": "https://openrouter.ai/api",
+                "auth_token": "${OPENROUTER_API_KEY}",
+                "default": "deepseek-pro",
+                "models": {
+                    "owl": {
+                        "id": "openrouter/owl-alpha",
+                        "slot": "opus"
+                    },
+                    "deepseek-pro": {
+                        "id": "deepseek/deepseek-v4-pro",
+                        "slot": "sonnet"
+                    },
+                    "deepseek-flash": {
+                        "id": "deepseek/deepseek-v4-flash",
+                        "slot": "haiku"
+                    },
+                    "kimi": {
+                        "id": "moonshotai/kimi-k2.6",
+                        "slot": "custom",
+                        "description": "Moonshot Kimi"
+                    },
+                    "gemma": {
+                        "id": "google/gemma-4-26b-a4b-it"
+                    }
+                }
+            }
+        }
+    }"#;
+
+    let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
+    let Profile::Multi(p) = settings.profiles.get("openrouter").unwrap() else {
+        panic!("expected Multi variant");
+    };
+    assert_eq!(p.base_url, "https://openrouter.ai/api");
+    assert_eq!(p.default, "deepseek-pro");
+    assert_eq!(p.models.len(), 5);
+    assert_eq!(p.models.get("kimi").unwrap().description.as_deref(), Some("Moonshot Kimi"));
+    assert!(p.models.get("gemma").unwrap().slot.is_none());
 }
 
 #[test]

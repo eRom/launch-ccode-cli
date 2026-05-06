@@ -8,12 +8,49 @@ pub struct Settings {
 }
 
 #[derive(Debug, Deserialize)]
-pub struct Profile {
+#[serde(untagged)]
+pub enum Profile {
+    Multi(MultiProfile),
+    Single(SingleProfile),
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SingleProfile {
     pub model: String,
     pub base_url: String,
     pub api_key: String,
     pub auth_token: String,
     pub env: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct MultiProfile {
+    pub base_url: String,
+    #[serde(default)]
+    pub api_key: String,
+    #[serde(default)]
+    pub auth_token: String,
+    pub default: String,
+    pub models: HashMap<String, ModelEntry>,
+    pub env: Option<HashMap<String, String>>,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct ModelEntry {
+    pub id: String,
+    #[serde(default)]
+    pub slot: Option<Slot>,
+    #[serde(default)]
+    pub description: Option<String>,
+}
+
+#[derive(Debug, Deserialize, PartialEq, Eq, Clone, Copy)]
+#[serde(rename_all = "lowercase")]
+pub enum Slot {
+    Opus,
+    Sonnet,
+    Haiku,
+    Custom,
 }
 
 pub fn expand_env_vars(s: &str) -> Result<String, Box<dyn std::error::Error>> {
@@ -65,8 +102,15 @@ pub fn list_profiles() -> Result<(), Box<dyn std::error::Error>> {
     let mut names: Vec<_> = settings.profiles.keys().collect();
     names.sort();
     for name in names {
-        let p = &settings.profiles[name];
-        println!("{:<20} {:<30} {}", name, p.model, p.base_url);
+        match &settings.profiles[name] {
+            Profile::Single(p) => {
+                println!("{:<20} {:<30} {}", name, p.model, p.base_url);
+            }
+            Profile::Multi(p) => {
+                let label = format!("multi: {} models (default: {})", p.models.len(), p.default);
+                println!("{:<20} {:<30} {}", name, label, p.base_url);
+            }
+        }
     }
     Ok(())
 }
