@@ -1,5 +1,10 @@
 # lcc — Launch Claude Code
 
+[![License: MIT](https://img.shields.io/github/license/eRom/launch-ccode-cli?color=blue)](./LICENSE)
+[![Latest release](https://img.shields.io/github/v/release/eRom/launch-ccode-cli?color=brightgreen)](https://github.com/eRom/launch-ccode-cli/releases)
+[![Rust](https://img.shields.io/badge/rust-2021-orange?logo=rust)](https://www.rust-lang.org)
+[![GitHub stars](https://img.shields.io/github/stars/eRom/launch-ccode-cli?style=social)](https://github.com/eRom/launch-ccode-cli/stargazers)
+
 A lightweight Rust launcher that lets you run the official **Claude Code** CLI
 against any OpenAI/Anthropic-compatible provider — OpenRouter, Ollama, vLLM,
 LiteLLM, your own gateway — without juggling environment variables by hand.
