@@ -102,7 +102,7 @@ interactive `/model` picker:
 |-----------|------------------------------------|-----------------------------------|
 | `opus`    | `ANTHROPIC_DEFAULT_OPUS_MODEL`     | `/model opus` switches instantly  |
 | `sonnet`  | `ANTHROPIC_DEFAULT_SONNET_MODEL`   | `/model sonnet` switches instantly|
-| `haiku`   | `ANTHROPIC_DEFAULT_HAIKU_MODEL`    | `/model haiku` switches instantly |
+| `haiku`   | `ANTHROPIC_DEFAULT_HAIKU_MODEL` (+ `ANTHROPIC_SMALL_FAST_MODEL`) | `/model haiku` switches instantly; same model also used for background tasks (web summaries, session titles, hooks) |
 | `custom`  | `ANTHROPIC_CUSTOM_MODEL_OPTION` (+ `_NAME` / `_DESCRIPTION`) | adds an extra entry to the picker |
 | *(none)*  | —                                  | reachable via full slug: `/model google/gemma-4-26b-a4b-it` |
 

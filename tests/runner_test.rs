@@ -20,6 +20,7 @@ fn test_build_env_vars_basic() {
     assert_eq!(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(), "gemma4");
+    assert_eq!(env.get("ANTHROPIC_SMALL_FAST_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("CLAUDE_CODE_SUBAGENT_MODEL").unwrap(), "gemma4");
     assert_eq!(env.get("CLAUDE_CODE_ATTRIBUTION_HEADER").unwrap(), "0");
 }
@@ -147,6 +148,7 @@ fn test_build_env_vars_multi_full() {
     assert_eq!(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").unwrap(), "openrouter/owl-alpha");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").unwrap(), "deepseek/deepseek-v4-pro");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(), "deepseek/deepseek-v4-flash");
+    assert_eq!(env.get("ANTHROPIC_SMALL_FAST_MODEL").unwrap(), "deepseek/deepseek-v4-flash");
     assert_eq!(env.get("ANTHROPIC_CUSTOM_MODEL_OPTION").unwrap(), "moonshotai/kimi-k2.6");
     assert_eq!(env.get("ANTHROPIC_CUSTOM_MODEL_OPTION_NAME").unwrap(), "kimi");
     assert_eq!(env.get("ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION").unwrap(), "Moonshot Kimi");
@@ -204,6 +206,7 @@ fn test_build_env_vars_multi_no_slot_does_not_set_picker_vars() {
     assert!(!env.contains_key("ANTHROPIC_DEFAULT_OPUS_MODEL"));
     assert!(!env.contains_key("ANTHROPIC_DEFAULT_SONNET_MODEL"));
     assert!(!env.contains_key("ANTHROPIC_DEFAULT_HAIKU_MODEL"));
+    assert!(!env.contains_key("ANTHROPIC_SMALL_FAST_MODEL"));
     assert!(!env.contains_key("ANTHROPIC_CUSTOM_MODEL_OPTION"));
     assert_eq!(env.get("ANTHROPIC_MODEL").unwrap(), "provider/a");
 }

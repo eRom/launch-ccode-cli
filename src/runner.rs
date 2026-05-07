@@ -50,6 +50,7 @@ pub fn build_env_vars_single(
     env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), model.clone());
     env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), model.clone());
+    env.insert("ANTHROPIC_SMALL_FAST_MODEL".into(), model.clone());
     env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), model);
     env.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".into(), "0".into());
 
@@ -92,7 +93,8 @@ pub fn build_env_vars_multi(
                 env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), id);
             }
             Slot::Haiku => {
-                env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), id);
+                env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), id.clone());
+                env.insert("ANTHROPIC_SMALL_FAST_MODEL".into(), id);
             }
             Slot::Custom => {
                 if let Some(prev) = &custom_set {
