@@ -1,7 +1,9 @@
 use crate::config::{expand_env_vars, load_settings, MultiProfile, Profile, SingleProfile, Slot};
+use crate::proxy::{health, DEFAULT_PORT};
 use std::collections::HashMap;
 use std::path::PathBuf;
 use std::process::Command;
+use std::time::Duration;
 
 pub fn find_claude() -> Result<PathBuf, Box<dyn std::error::Error>> {
     if let Ok(output) = Command::new("which").arg("claude").output() {
@@ -132,6 +134,13 @@ pub fn build_claude_args(model: &str, extra: &[String]) -> Vec<String> {
 }
 
 pub fn run(profil: &str, extra_args: &[String]) -> Result<(), Box<dyn std::error::Error>> {
+    if !health::is_alive(DEFAULT_PORT, Duration::from_secs(1)) {
+        return Err(format!(
+            "✗ Le proxy LiteLLM ne répond pas sur :{DEFAULT_PORT}.\n  → Lance: lcc proxy doctor\n  → Ou:   lcc proxy start"
+        )
+        .into());
+    }
+
     let settings = load_settings()?;
     let profile = settings.profiles.get(profil).ok_or_else(|| {
         let available: Vec<_> = settings.profiles.keys().collect();
