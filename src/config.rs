@@ -18,7 +18,9 @@ pub enum Profile {
 pub struct SingleProfile {
     pub model: String,
     pub base_url: String,
+    #[serde(default)]
     pub api_key: String,
+    #[serde(default)]
     pub auth_token: String,
     pub env: Option<HashMap<String, String>>,
 }

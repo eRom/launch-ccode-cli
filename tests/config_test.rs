@@ -26,6 +26,27 @@ fn test_parse_valid_settings_single() {
 }
 
 #[test]
+fn test_parse_single_profile_minimal_fields() {
+    // api_key et auth_token sont optionnels (defaut chaine vide) — cf v0.2.1.
+    let json = r#"{
+        "profiles": {
+            "minimal": {
+                "model": "google/gemma-4-31b-it:free",
+                "base_url": "https://openrouter.ai/api"
+            }
+        }
+    }"#;
+
+    let settings: lcc::config::Settings = serde_json::from_str(json).unwrap();
+    let Profile::Single(p) = settings.profiles.get("minimal").unwrap() else {
+        panic!("expected Single variant");
+    };
+    assert_eq!(p.model, "google/gemma-4-31b-it:free");
+    assert_eq!(p.api_key, "");
+    assert_eq!(p.auth_token, "");
+}
+
+#[test]
 fn test_parse_profile_with_env() {
     let json = r#"{
         "profiles": {
