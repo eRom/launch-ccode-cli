@@ -15,8 +15,10 @@ fn wrapper_loads_master_key_then_execs_litellm() {
     ));
     assert!(wrapper.contains("export LCC_MASTER_KEY"));
     assert!(wrapper.contains(
-        "exec /Users/test/.local/share/lcc/litellm-venv/bin/litellm"
+        "exec \"/Users/test/.local/share/lcc/litellm-venv/bin/litellm\""
     ));
-    assert!(wrapper.contains("--config /Users/test/.config/launch-claude-code/litellm.yaml"));
+    assert!(wrapper.contains(
+        "--config \"/Users/test/.config/launch-claude-code/litellm.yaml\""
+    ));
     assert!(wrapper.contains("--port 4000"));
 }

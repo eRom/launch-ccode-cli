@@ -17,7 +17,7 @@ LCC_MASTER_KEY="$(security find-generic-password -s {KEYCHAIN_SERVICE} -w)"
 export LCC_MASTER_KEY
 
 # S'assure que le PYTHONPATH inclut le site-packages du venv pour le callback custom.
-exec {litellm_bin} --config {yaml_path} --port {port}
+exec "{litellm_bin}" --config "{yaml_path}" --port {port}
 "#
     )
 }
