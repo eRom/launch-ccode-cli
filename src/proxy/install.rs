@@ -16,11 +16,14 @@ use std::process::Command;
 use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
+use std::path::PathBuf;
+use std::thread;
+use std::time::{Duration, Instant};
 
 use crate::config::load_settings;
 use crate::proxy::{
     generators::{plist::generate_plist, wrapper::generate_wrapper, yaml::generate_litellm_yaml},
-    keychain, logs_dir, plist_path, wrapper_path, yaml_path, DEFAULT_PORT,
+    keychain, health, launchctl, logs_dir, plist_path, wrapper_path, yaml_path, DEFAULT_PORT,
 };
 
 pub fn ensure_uv_installed() -> io::Result<()> {
@@ -149,5 +152,90 @@ pub fn write_plist() -> io::Result<()> {
     fs::write(&path, plist_content)?;
     fs::set_permissions(&path, fs::Permissions::from_mode(0o600))?;
     println!("✓ plist généré : {}", path.display());
+    Ok(())
+}
+
+/// Path du répertoire des outils `uv`.
+fn uv_tool_dir() -> io::Result<PathBuf> {
+    let output = Command::new("uv")
+        .args(["tool", "dir"])
+        .output()?;
+    if !output.status.success() {
+        return Err(io::Error::new(
+            ErrorKind::Other,
+            "uv tool dir a échoué",
+        ));
+    }
+    let dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(PathBuf::from(dir))
+}
+
+/// Trouve le répertoire `site-packages` du venv litellm.
+fn find_site_packages(venv_dir: &PathBuf) -> io::Result<PathBuf> {
+    let lib = venv_dir.join("lib");
+    for entry in fs::read_dir(&lib)? {
+        let entry = entry?;
+        let p = entry.path();
+        if p.is_dir() {
+            let file_name = p.file_name().unwrap().to_string_lossy();
+            if file_name.starts_with("python") {
+                let sp = p.join("site-packages");
+                if sp.exists() {
+                    return Ok(sp);
+                }
+            }
+        }
+    }
+    Err(io::Error::new(
+        ErrorKind::NotFound,
+        format!("site-packages introuvable sous {}", lib.display()),
+    ))
+}
+
+/// Copie le callback Python embarqué dans les assets vers le site-packages du venv.
+pub fn install_python_callback() -> io::Result<()> {
+    const CALLBACK_PY: &str = include_str!("../../assets/lcc_strip_thinking.py");
+
+    let venv_dir = uv_tool_dir()?.join("litellm");
+    let site_packages = find_site_packages(&venv_dir)?;
+    let dest = site_packages.join("lcc_strip_thinking.py");
+    fs::write(&dest, CALLBACK_PY)?;
+    println!("✓ callback Python installé : {}", dest.display());
+    Ok(())
+}
+
+/// Charge le LaunchAgent et attend que le proxy soit opérationnel.
+pub fn load_and_wait() -> io::Result<()> {
+    println!("→ launchctl load…");
+    launchctl::load()?;
+    println!("→ attente health check (max 10s)…");
+    let deadline = Instant::now() + Duration::from_secs(10);
+    while Instant::now() < deadline {
+        if health::is_alive(DEFAULT_PORT, Duration::from_millis(500)) {
+            println!("✓ proxy ready on :{DEFAULT_PORT}");
+            return Ok(());
+        }
+        thread::sleep(Duration::from_millis(500));
+    }
+    Err(io::Error::new(
+        ErrorKind::TimedOut,
+        format!(
+            "proxy non répondant après 10s. Vérifie : tail ~/Library/Logs/lcc/litellm.err.log"
+        ),
+    ))
+}
+
+/// Orchestrateur principal : enchaîne toutes les 8 étapes d'installation.
+pub fn run_install() -> io::Result<()> {
+    println!("=== lcc proxy install ===\n");
+    ensure_uv_installed()?;
+    install_litellm_via_uv()?;
+    write_master_key_to_keychain()?;
+    write_yaml()?;
+    write_wrapper()?;
+    write_plist()?;
+    install_python_callback()?;
+    load_and_wait()?;
+    println!("\n✓ tout est prêt. `lcc start --profil <X>` devrait marcher.");
     Ok(())
 }
