@@ -16,6 +16,10 @@ set -euo pipefail
 LCC_MASTER_KEY="$(security find-generic-password -s {KEYCHAIN_SERVICE} -w)"
 export LCC_MASTER_KEY
 
+# LiteLLM tente de charger prisma si DATABASE_URL est defini dans l'env.
+# On nettoie pour forcer le mode stateless (cf litellm.yaml: database_url: null).
+unset DATABASE_URL
+
 # S'assure que le PYTHONPATH inclut le site-packages du venv pour le callback custom.
 exec "{litellm_bin}" --config "{yaml_path}" --port {port}
 "#

@@ -14,6 +14,7 @@ fn wrapper_loads_master_key_then_execs_litellm() {
         r#"LCC_MASTER_KEY="$(security find-generic-password -s lcc.litellm.master_key -w)""#
     ));
     assert!(wrapper.contains("export LCC_MASTER_KEY"));
+    assert!(wrapper.contains("unset DATABASE_URL"));
     assert!(wrapper.contains(
         "exec \"/Users/test/.local/share/lcc/litellm-venv/bin/litellm\""
     ));
