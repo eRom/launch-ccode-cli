@@ -45,7 +45,8 @@ pub fn generate_litellm_yaml(settings: &Settings) -> String {
     let mut root = Mapping::new();
     root.insert(Value::from("model_list"), Value::Sequence(model_list));
     root.insert(Value::from("litellm_settings"), litellm_settings_block());
-    root.insert(Value::from("general_settings"), general_settings_block());
+    // V1 : pas de general_settings — pas de master_key (eviterait
+    // une dependance prisma cote LiteLLM), pas de DB. Localhost-only.
 
     serde_yaml::to_string(&Value::Mapping(root))
         .expect("serialization yaml LiteLLM ne peut pas échouer")
@@ -110,13 +111,3 @@ fn litellm_settings_block() -> Value {
     Value::Mapping(m)
 }
 
-fn general_settings_block() -> Value {
-    let mut m = Mapping::new();
-    m.insert(
-        Value::from("master_key"),
-        Value::from("os.environ/LCC_MASTER_KEY"),
-    );
-    m.insert(Value::from("database_url"), Value::Null);
-    m.insert(Value::from("store_model_in_db"), Value::from(false));
-    Value::Mapping(m)
-}

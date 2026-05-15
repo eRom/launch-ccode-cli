@@ -41,10 +41,6 @@ litellm_settings:
   set_verbose: false
   callbacks:
   - lcc_strip_thinking.lcc_strip_thinking
-general_settings:
-  master_key: os.environ/LCC_MASTER_KEY
-  database_url: null
-  store_model_in_db: false
 "#;
     let expected: serde_yaml::Value = serde_yaml::from_str(expected_str).unwrap();
     assert_eq!(got, expected);
