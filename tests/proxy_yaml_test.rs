@@ -40,7 +40,7 @@ litellm_settings:
   drop_params: true
   set_verbose: false
   callbacks:
-  - lcc_strip_thinking
+  - lcc_strip_thinking.lcc_strip_thinking
 general_settings:
   master_key: os.environ/LCC_MASTER_KEY
   database_url: null

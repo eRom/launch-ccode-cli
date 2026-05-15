@@ -105,7 +105,7 @@ fn litellm_settings_block() -> Value {
     m.insert(Value::from("set_verbose"), Value::from(false));
     m.insert(
         Value::from("callbacks"),
-        Value::Sequence(vec![Value::from("lcc_strip_thinking")]),
+        Value::Sequence(vec![Value::from("lcc_strip_thinking.lcc_strip_thinking")]),
     );
     Value::Mapping(m)
 }

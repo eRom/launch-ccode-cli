@@ -16,7 +16,6 @@ use std::process::Command;
 use std::collections::HashMap;
 use std::fs;
 use std::os::unix::fs::PermissionsExt;
-use std::path::PathBuf;
 use std::thread;
 use std::time::{Duration, Instant};
 
@@ -155,50 +154,18 @@ pub fn write_plist() -> io::Result<()> {
     Ok(())
 }
 
-/// Path du répertoire des outils `uv`.
-fn uv_tool_dir() -> io::Result<PathBuf> {
-    let output = Command::new("uv")
-        .args(["tool", "dir"])
-        .output()?;
-    if !output.status.success() {
-        return Err(io::Error::new(
-            ErrorKind::Other,
-            "uv tool dir a échoué",
-        ));
-    }
-    let dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    Ok(PathBuf::from(dir))
-}
-
-/// Trouve le répertoire `site-packages` du venv litellm.
-fn find_site_packages(venv_dir: &PathBuf) -> io::Result<PathBuf> {
-    let lib = venv_dir.join("lib");
-    for entry in fs::read_dir(&lib)? {
-        let entry = entry?;
-        let p = entry.path();
-        if p.is_dir() {
-            let file_name = p.file_name().unwrap().to_string_lossy();
-            if file_name.starts_with("python") {
-                let sp = p.join("site-packages");
-                if sp.exists() {
-                    return Ok(sp);
-                }
-            }
-        }
-    }
-    Err(io::Error::new(
-        ErrorKind::NotFound,
-        format!("site-packages introuvable sous {}", lib.display()),
-    ))
-}
-
-/// Copie le callback Python embarqué dans les assets vers le site-packages du venv.
+/// Copie le callback Python embarqué dans les assets vers le répertoire du yaml config.
+/// LiteLLM résout `callbacks: ["foo.bar"]` comme `<config_dir>/foo.py` → le fichier
+/// doit être à côté du litellm.yaml, pas dans site-packages.
 pub fn install_python_callback() -> io::Result<()> {
     const CALLBACK_PY: &str = include_str!("../../assets/lcc_strip_thinking.py");
 
-    let venv_dir = uv_tool_dir()?.join("litellm");
-    let site_packages = find_site_packages(&venv_dir)?;
-    let dest = site_packages.join("lcc_strip_thinking.py");
+    let yaml = yaml_path();
+    let dest_dir = yaml.parent().ok_or_else(|| {
+        io::Error::new(ErrorKind::Other, "yaml_path n'a pas de parent")
+    })?;
+    fs::create_dir_all(dest_dir)?;
+    let dest = dest_dir.join("lcc_strip_thinking.py");
     fs::write(&dest, CALLBACK_PY)?;
     println!("✓ callback Python installé : {}", dest.display());
     Ok(())
