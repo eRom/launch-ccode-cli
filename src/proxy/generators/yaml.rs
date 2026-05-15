@@ -15,15 +15,29 @@ pub fn generate_litellm_yaml(settings: &Settings) -> String {
     for profile_name in profile_keys {
         match &settings.profiles[profile_name] {
             Profile::Single(sp) => {
+                let auth = pick_auth_str(&sp.auth_token, &sp.api_key);
                 model_list.push(build_model_entry(
                     profile_name,
                     &sp.model,
                     &sp.base_url,
-                    &sp.auth_token,
+                    auth,
                 ));
             }
-            Profile::Multi(_mp) => {
-                // Implémenté en Task 1.3
+            Profile::Multi(mp) => {
+                let auth = pick_auth_str(&mp.auth_token, &mp.api_key);
+                // Sort keys for deterministic output (HashMap iteration is random)
+                let mut keys: Vec<&String> = mp.models.keys().collect();
+                keys.sort();
+                for alias in keys {
+                    let entry = &mp.models[alias];
+                    let composite_name = format!("{profile_name}/{alias}");
+                    model_list.push(build_model_entry(
+                        &composite_name,
+                        &entry.id,
+                        &mp.base_url,
+                        auth,
+                    ));
+                }
             }
         }
     }
@@ -41,18 +55,20 @@ fn build_model_entry(
     name: &str,
     model_id: &str,
     base_url: &str,
-    auth: &str,
+    auth: Option<&str>,
 ) -> Value {
     let prefix = detect_litellm_prefix(base_url).unwrap_or("openai");
     let full_model = format!("{prefix}/{model_id}");
 
     let mut params = Mapping::new();
     params.insert(Value::from("model"), Value::from(full_model));
-    if let Some(env_ref) = extract_env_var(auth) {
-        params.insert(
-            Value::from("api_key"),
-            Value::from(format!("os.environ/{env_ref}")),
-        );
+    if let Some(auth_str) = auth {
+        if let Some(env_ref) = extract_env_var(auth_str) {
+            params.insert(
+                Value::from("api_key"),
+                Value::from(format!("os.environ/{env_ref}")),
+            );
+        }
     }
     params.insert(Value::from("drop_params"), Value::from(true));
 
@@ -60,6 +76,18 @@ fn build_model_entry(
     entry.insert(Value::from("model_name"), Value::from(name));
     entry.insert(Value::from("litellm_params"), Value::Mapping(params));
     Value::Mapping(entry)
+}
+
+/// Choisit l'auth à utiliser pour LiteLLM : `auth_token` en priorité,
+/// `api_key` en fallback. Fonctionne avec des String (même si vides).
+fn pick_auth_str<'a>(auth_token: &'a str, api_key: &'a str) -> Option<&'a str> {
+    if !auth_token.is_empty() {
+        Some(auth_token)
+    } else if !api_key.is_empty() {
+        Some(api_key)
+    } else {
+        None
+    }
 }
 
 /// Extrait `OPENROUTER_API_KEY` depuis `${OPENROUTER_API_KEY}`. Retourne None si pas en format ${VAR}.
