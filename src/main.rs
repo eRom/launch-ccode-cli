@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod config;
+mod proxy;
 mod runner;
 
 #[derive(Parser)]
