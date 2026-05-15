@@ -18,5 +18,8 @@ dirs = "6"
 serde_yaml = "0.9"
 ureq = { version = "2.10", features = ["json"] }
 
+[features]
+mock-keychain = []
+
 [dev-dependencies]
 tempfile = "3"

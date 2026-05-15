@@ -26,34 +26,35 @@ pub fn find_claude() -> Result<PathBuf, Box<dyn std::error::Error>> {
     .into())
 }
 
-fn insert_auth(
-    env: &mut HashMap<String, String>,
-    api_key: &str,
-    auth_token: &str,
-) -> Result<(), Box<dyn std::error::Error>> {
-    let api_key = expand_env_vars(api_key)?;
-    let auth_token = expand_env_vars(auth_token)?;
-    if !api_key.is_empty() {
-        env.insert("ANTHROPIC_API_KEY".into(), api_key);
-    } else if !auth_token.is_empty() {
-        env.insert("ANTHROPIC_AUTH_TOKEN".into(), auth_token);
-    }
-    Ok(())
-}
-
+/// Construit les variables d'environnement pour un profil Single.
+/// Toutes les invocations lcc passent par le proxy local (localhost:DEFAULT_PORT).
+/// `profile_name` est le nom court du profil (alias LiteLLM dans le yaml).
 pub fn build_env_vars_single(
+    profile_name: &str,
     profile: &SingleProfile,
 ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-    let model = expand_env_vars(&profile.model)?;
+    let master_key = crate::proxy::keychain::get_master_key()
+        .map_err(|e| format!("master_key Keychain : {e}. Lance `lcc proxy install`."))?;
+
     let mut env = HashMap::new();
-    env.insert("ANTHROPIC_BASE_URL".into(), expand_env_vars(&profile.base_url)?);
-    insert_auth(&mut env, &profile.api_key, &profile.auth_token)?;
-    env.insert("ANTHROPIC_MODEL".into(), model.clone());
-    env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), model.clone());
-    env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), model.clone());
-    env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), model.clone());
-    env.insert("ANTHROPIC_SMALL_FAST_MODEL".into(), model.clone());
-    env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), model);
+    env.insert(
+        "ANTHROPIC_BASE_URL".into(),
+        format!("http://localhost:{DEFAULT_PORT}"),
+    );
+    env.insert("ANTHROPIC_AUTH_TOKEN".into(), master_key);
+    env.insert("ANTHROPIC_MODEL".into(), profile_name.to_string());
+    env.insert(
+        "ANTHROPIC_DEFAULT_OPUS_MODEL".into(),
+        profile_name.to_string(),
+    );
+    env.insert(
+        "ANTHROPIC_DEFAULT_SONNET_MODEL".into(),
+        profile_name.to_string(),
+    );
+    env.insert(
+        "ANTHROPIC_DEFAULT_HAIKU_MODEL".into(),
+        profile_name.to_string(),
+    );
     env.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".into(), "0".into());
 
     if let Some(custom) = &profile.env {
@@ -65,55 +66,60 @@ pub fn build_env_vars_single(
     Ok(env)
 }
 
+/// Construit les variables d'environnement pour un profil Multi.
+/// `profile_name` est le nom court du profil ; les modèles sont référencés
+/// sous la forme `<profile_name>/<alias>` (correspond au yaml LiteLLM généré).
 pub fn build_env_vars_multi(
+    profile_name: &str,
     profile: &MultiProfile,
 ) -> Result<HashMap<String, String>, Box<dyn std::error::Error>> {
-    let default_entry = profile.models.get(&profile.default).ok_or_else(|| {
-        format!(
+    // Vérifie que le modèle par défaut existe.
+    if !profile.models.contains_key(&profile.default) {
+        return Err(format!(
             "default model '{}' not found in profile.models",
             profile.default
         )
-    })?;
-    let default_id = expand_env_vars(&default_entry.id)?;
+        .into());
+    }
+
+    let master_key = crate::proxy::keychain::get_master_key()
+        .map_err(|e| format!("master_key Keychain : {e}. Lance `lcc proxy install`."))?;
 
     let mut env = HashMap::new();
-    env.insert("ANTHROPIC_BASE_URL".into(), expand_env_vars(&profile.base_url)?);
-    insert_auth(&mut env, &profile.api_key, &profile.auth_token)?;
-    env.insert("ANTHROPIC_MODEL".into(), default_id.clone());
-    env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), default_id);
+    env.insert(
+        "ANTHROPIC_BASE_URL".into(),
+        format!("http://localhost:{DEFAULT_PORT}"),
+    );
+    env.insert("ANTHROPIC_AUTH_TOKEN".into(), master_key);
+    // ANTHROPIC_MODEL = <profile_name>/<default_alias>
+    env.insert(
+        "ANTHROPIC_MODEL".into(),
+        format!("{}/{}", profile_name, profile.default),
+    );
     env.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".into(), "0".into());
 
     let mut custom_set: Option<String> = None;
-    for (name, entry) in &profile.models {
+    for (alias, entry) in &profile.models {
         let Some(slot) = entry.slot else { continue };
-        let id = expand_env_vars(&entry.id)?;
+        let composite = format!("{}/{}", profile_name, alias);
         match slot {
             Slot::Opus => {
-                env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), id);
+                env.insert("ANTHROPIC_DEFAULT_OPUS_MODEL".into(), composite);
             }
             Slot::Sonnet => {
-                env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), id);
+                env.insert("ANTHROPIC_DEFAULT_SONNET_MODEL".into(), composite);
             }
             Slot::Haiku => {
-                env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), id.clone());
-                env.insert("ANTHROPIC_SMALL_FAST_MODEL".into(), id);
+                env.insert("ANTHROPIC_DEFAULT_HAIKU_MODEL".into(), composite);
             }
             Slot::Custom => {
                 if let Some(prev) = &custom_set {
                     return Err(format!(
-                        "two models claim slot 'custom': '{prev}' and '{name}'. Only one is allowed."
+                        "two models claim slot 'custom': '{prev}' and '{alias}'. Only one is allowed."
                     )
                     .into());
                 }
-                env.insert("ANTHROPIC_CUSTOM_MODEL_OPTION".into(), id);
-                env.insert("ANTHROPIC_CUSTOM_MODEL_OPTION_NAME".into(), name.clone());
-                if let Some(d) = &entry.description {
-                    env.insert(
-                        "ANTHROPIC_CUSTOM_MODEL_OPTION_DESCRIPTION".into(),
-                        expand_env_vars(d)?,
-                    );
-                }
-                custom_set = Some(name.clone());
+                custom_set = Some(alias.clone());
             }
         }
     }
@@ -159,20 +165,13 @@ pub fn run(profil: &str, extra_args: &[String]) -> Result<(), Box<dyn std::error
 
     let (env_vars, model) = match profile {
         Profile::Single(p) => {
-            let env = build_env_vars_single(p)?;
-            let m = expand_env_vars(&p.model)?;
-            (env, m)
+            let env = build_env_vars_single(profil, p)?;
+            (env, profil.to_string())
         }
         Profile::Multi(p) => {
-            let env = build_env_vars_multi(p)?;
-            let default_entry = p.models.get(&p.default).ok_or_else(|| {
-                format!(
-                    "default model '{}' not found in profile.models",
-                    p.default
-                )
-            })?;
-            let m = expand_env_vars(&default_entry.id)?;
-            (env, m)
+            let env = build_env_vars_multi(profil, p)?;
+            let model = format!("{}/{}", profil, p.default);
+            (env, model)
         }
     };
 

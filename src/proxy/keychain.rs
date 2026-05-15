@@ -29,24 +29,32 @@ pub fn set_master_key(value: &str) -> io::Result<()> {
 
 /// Lit la master_key depuis le Keychain.
 /// Retourne `Err` si non trouvée.
+/// Sous la feature `mock-keychain`, retourne une clé stub (pour les tests).
 pub fn get_master_key() -> io::Result<String> {
-    let output = Command::new("security")
-        .args(["find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"])
-        .output()?;
-    if !output.status.success() {
-        return Err(io::Error::new(
-            ErrorKind::NotFound,
-            "master_key absente du Keychain (lance `lcc proxy install`)",
-        ));
+    #[cfg(feature = "mock-keychain")]
+    {
+        return Ok("mock-master-key".to_string());
     }
-    let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if s.is_empty() {
-        return Err(io::Error::new(
-            ErrorKind::InvalidData,
-            "master_key vide dans le Keychain",
-        ));
+    #[cfg(not(feature = "mock-keychain"))]
+    {
+        let output = Command::new("security")
+            .args(["find-generic-password", "-s", KEYCHAIN_SERVICE, "-w"])
+            .output()?;
+        if !output.status.success() {
+            return Err(io::Error::new(
+                ErrorKind::NotFound,
+                "master_key absente du Keychain (lance `lcc proxy install`)",
+            ));
+        }
+        let s = String::from_utf8_lossy(&output.stdout).trim().to_string();
+        if s.is_empty() {
+            return Err(io::Error::new(
+                ErrorKind::InvalidData,
+                "master_key vide dans le Keychain",
+            ));
+        }
+        Ok(s)
     }
-    Ok(s)
 }
 
 /// Supprime la master_key du Keychain (pour `proxy uninstall --purge`).
