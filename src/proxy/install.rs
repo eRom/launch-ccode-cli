@@ -178,6 +178,68 @@ pub fn install_python_callback() -> io::Result<()> {
     Ok(())
 }
 
+/// Lance `prisma generate` dans le venv litellm pour creer le client prisma.
+/// LiteLLM appelle `from prisma import Prisma` dans son startup event meme
+/// sans DB configuree (cf litellm/proxy/utils.py:2562). Sans ce generate,
+/// le daemon crashe avec "Unable to find Prisma binaries".
+pub fn run_prisma_generate() -> io::Result<()> {
+    println!("→ prisma generate…");
+    let tool_dir = uv_tool_dir_path()?;
+    let schema = tool_dir
+        .join("lib/python3.13/site-packages/litellm/proxy/schema.prisma");
+    if !schema.exists() {
+        return Err(io::Error::new(
+            ErrorKind::NotFound,
+            format!("schema.prisma introuvable a {}", schema.display()),
+        ));
+    }
+    let prisma_bin = tool_dir.join("bin/prisma");
+    let bin_dir = tool_dir.join("bin");
+    let new_path = match std::env::var("PATH") {
+        Ok(p) => format!("{}:{p}", bin_dir.display()),
+        Err(_) => bin_dir.display().to_string(),
+    };
+    let status = Command::new(&prisma_bin)
+        .args(["generate", "--schema"])
+        .arg(&schema)
+        .env("PATH", &new_path)
+        .current_dir(schema.parent().unwrap())
+        .status()?;
+    if !status.success() {
+        return Err(io::Error::new(
+            ErrorKind::Other,
+            "prisma generate a échoué",
+        ));
+    }
+    println!("✓ prisma client généré");
+    Ok(())
+}
+
+/// Place une sentinelle `.env` dans le tool dir uv pour court-circuiter la
+/// remontee de python-dotenv. Sans ca, dotenv (appele par LiteLLM) remonte
+/// depuis le `__file__` du module litellm jusqu'a `~/.env` et y trouve
+/// potentiellement DATABASE_URL, ce qui fait crasher LiteLLM au demarrage.
+pub fn install_dotenv_sentinel() -> io::Result<()> {
+    let tool_dir = uv_tool_dir_path()?;
+    let sentinel = tool_dir.join(".env");
+    let content = "# Sentinelle placee par lcc proxy install: court-circuite la remontee\n\
+                   # de python-dotenv pour empecher le chargement de ~/.env (qui pourrait\n\
+                   # contenir DATABASE_URL et faire crasher LiteLLM au demarrage).\n\
+                   LCC_DOTENV_SENTINEL=1\n";
+    fs::write(&sentinel, content)?;
+    println!("✓ sentinelle dotenv installée : {}", sentinel.display());
+    Ok(())
+}
+
+fn uv_tool_dir_path() -> io::Result<std::path::PathBuf> {
+    let output = Command::new("uv").args(["tool", "dir"]).output()?;
+    if !output.status.success() {
+        return Err(io::Error::new(ErrorKind::Other, "uv tool dir a échoué"));
+    }
+    let dir = String::from_utf8_lossy(&output.stdout).trim().to_string();
+    Ok(std::path::PathBuf::from(dir).join("litellm"))
+}
+
 /// Charge le LaunchAgent et attend que le proxy soit opérationnel.
 pub fn load_and_wait() -> io::Result<()> {
     println!("→ launchctl load…");
@@ -199,11 +261,13 @@ pub fn load_and_wait() -> io::Result<()> {
     ))
 }
 
-/// Orchestrateur principal : enchaîne toutes les 8 étapes d'installation.
+/// Orchestrateur principal : enchaîne toutes les étapes d'installation.
 pub fn run_install() -> io::Result<()> {
     println!("=== lcc proxy install ===\n");
     ensure_uv_installed()?;
     install_litellm_via_uv()?;
+    run_prisma_generate()?;
+    install_dotenv_sentinel()?;
     write_master_key_to_keychain()?;
     write_yaml()?;
     write_wrapper()?;

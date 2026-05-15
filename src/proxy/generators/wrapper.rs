@@ -16,8 +16,10 @@ set -euo pipefail
 LCC_MASTER_KEY="$(security find-generic-password -s {KEYCHAIN_SERVICE} -w)"
 export LCC_MASTER_KEY
 
-# LiteLLM tente de charger prisma si DATABASE_URL est defini dans l'env.
-# On nettoie pour forcer le mode stateless (cf litellm.yaml: database_url: null).
+# Defense en profondeur : on nettoie DATABASE_URL au cas ou un autre process
+# l'aurait export. Le vrai blocage de python-dotenv (qui remonte depuis le
+# `__file__` de litellm jusqu'a ~/.env) se fait via une sentinelle .env
+# placee dans ~/.local/share/uv/tools/litellm/.env par `lcc proxy install`.
 unset DATABASE_URL
 
 # S'assure que le PYTHONPATH inclut le site-packages du venv pour le callback custom.
