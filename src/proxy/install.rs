@@ -40,9 +40,16 @@ pub fn ensure_uv_installed() -> io::Result<()> {
 }
 
 pub fn install_litellm_via_uv() -> io::Result<()> {
-    println!("→ uv tool install litellm[proxy] (peut prendre ~30s)…");
+    println!("→ uv tool install litellm[proxy] + prisma (peut prendre ~30s)…");
+    // `--with prisma` : LiteLLM appelle `import prisma` dans son handler
+    // d'exception meme sans DB configuree. Sans prisma installe, le daemon
+    // crashe au startup avec ModuleNotFoundError.
     let status = Command::new("uv")
-        .args(["tool", "install", "--force", "litellm[proxy]"])
+        .args([
+            "tool", "install", "--force",
+            "--with", "prisma",
+            "litellm[proxy]",
+        ])
         .status()?;
     if !status.success() {
         return Err(io::Error::new(
