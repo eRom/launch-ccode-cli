@@ -1,8 +1,13 @@
-//! `lcc proxy reload` — régénère le yaml + restart. (Task 5.1)
+//! `lcc proxy reload` — régénère le yaml depuis settings.json + restart.
 
+use crate::proxy::{install, launchctl};
 use std::io;
 
 pub fn run_reload() -> io::Result<()> {
-    eprintln!("⚠ reload pas encore implémenté (Task 5.1)");
+    println!("=== lcc proxy reload ===\n");
+    install::write_yaml()?;
+    println!("→ launchctl kickstart -k…");
+    launchctl::kickstart()?;
+    println!("✓ proxy rechargé.");
     Ok(())
 }
