@@ -181,6 +181,49 @@ Authentication: if both `api_key` and `auth_token` are set, the API key wins
   the model billed tokens. Interactive mode works fine for those models.
   This is a Claude Code ↔ provider compatibility issue, not an `lcc` issue.
 
+## Smoke test du proxy LiteLLM (V1)
+
+Prerequisites:
+- macOS
+- `brew install uv`
+- `OPENROUTER_API_KEY` (or other provider key) exported in `.zshrc`
+- A profile in `~/.config/launch-claude-code/settings.json` pointing to OpenRouter (e.g., `qwen` with `model: qwen/qwen3.6-plus`)
+
+```bash
+# 1. Build + install
+cargo install --path .
+
+# 2. Setup proxy (one-shot, ~30s)
+lcc proxy install
+
+# 3. Verify everything is green
+lcc proxy doctor
+# Expected: 7 lines "[✓]"
+
+# 4. First call
+lcc start --profil qwen -p "Say hello to me in one sentence"
+# Expected: actual text response (not an empty terminal!)
+
+# 5. Verify that `thinking` blocks are stripped
+lcc proxy logs | grep -i thinking || echo "OK: no thinking in recent logs"
+
+# 6. Test direct claude path (should always work)
+claude -p "ping"
+# Expected: native Anthropic response, completely independent from the proxy
+```
+
+If step 4 fails silently (empty terminal), it's a regression. Debug:
+- `lcc proxy logs` — the exact error returned by the provider
+- Direct call to the proxy via curl:
+
+```bash
+curl -sS http://localhost:4000/v1/messages \
+  -H "x-api-key: $(security find-generic-password -s lcc.litellm.master_key -w)" \
+  -H "anthropic-version: 2023-06-01" \
+  -H "content-type: application/json" \
+  -d '{"model":"qwen","max_tokens":50,"messages":[{"role":"user","content":"hi"}]}'
+```
+
 ## License
 
 MIT — see [LICENSE](./LICENSE).

@@ -1,6 +1,7 @@
 use clap::{Parser, Subcommand};
 
 mod config;
+mod proxy;
 mod runner;
 
 #[derive(Parser)]
@@ -29,6 +30,11 @@ enum Commands {
         #[arg(long)]
         validate: bool,
     },
+    /// Gestion du proxy LiteLLM autonome.
+    Proxy {
+        #[command(subcommand)]
+        cmd: proxy::cli::Proxy,
+    },
 }
 
 fn main() {
@@ -49,6 +55,12 @@ fn main() {
         Commands::Settings { validate } => {
             if let Err(e) = config::settings_command(validate) {
                 eprintln!("Error: {e}");
+                std::process::exit(1);
+            }
+        }
+        Commands::Proxy { cmd } => {
+            if let Err(e) = proxy::cli::dispatch(cmd) {
+                eprintln!("✗ {e}");
                 std::process::exit(1);
             }
         }

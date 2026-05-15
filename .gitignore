@@ -3,6 +3,9 @@
 
 # Local development
 test-rom/
+.venv*/
+__pycache__/
+*.pyc
 
 # Personal session memory (gerber)
 .cave/

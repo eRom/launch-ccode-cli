@@ -1,6 +1,6 @@
 [package]
 name = "lcc"
-version = "0.1.1"
+version = "0.2.0"
 edition = "2024"
 authors = ["Romain Ecarnot <romain.ecarnot@gmail.com>"]
 description = "A lightweight launcher to run Claude Code against any OpenAI/Anthropic-compatible provider (OpenRouter, Ollama, vLLM, …) with named profiles and runtime model switching."
@@ -15,6 +15,11 @@ clap = { version = "4", features = ["derive"] }
 serde = { version = "1", features = ["derive"] }
 serde_json = "1"
 dirs = "6"
+serde_yaml = "0.9"
+ureq = { version = "2.10", features = ["json"] }
+
+[features]
+mock-keychain = []
 
 [dev-dependencies]
 tempfile = "3"

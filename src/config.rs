@@ -41,6 +41,7 @@ pub struct ModelEntry {
     #[serde(default)]
     pub slot: Option<Slot>,
     #[serde(default)]
+    #[allow(dead_code)]
     pub description: Option<String>,
 }
 
