@@ -38,6 +38,8 @@ fn single_profile_env_points_to_proxy() {
     assert_eq!(env.get("ANTHROPIC_DEFAULT_OPUS_MODEL").unwrap(), "qwen");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_SONNET_MODEL").unwrap(), "qwen");
     assert_eq!(env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(), "qwen");
+    assert_eq!(env.get("ANTHROPIC_SMALL_FAST_MODEL").unwrap(), "qwen");
+    assert_eq!(env.get("CLAUDE_CODE_SUBAGENT_MODEL").unwrap(), "qwen");
     assert_eq!(env.get("CLAUDE_CODE_ATTRIBUTION_HEADER").unwrap(), "0");
 
     // Les champs provider (api_key, auth_token) ne doivent PAS être exposés.
@@ -173,6 +175,8 @@ fn multi_profile_env_points_to_proxy_with_composite_names() {
         env.get("ANTHROPIC_DEFAULT_HAIKU_MODEL").unwrap(),
         "myprofile/dflash"
     );
+    assert_eq!(env.get("ANTHROPIC_SMALL_FAST_MODEL").unwrap(), "myprofile/dflash");
+    assert_eq!(env.get("CLAUDE_CODE_SUBAGENT_MODEL").unwrap(), "myprofile/dflash");
     assert_eq!(env.get("CLAUDE_CODE_ATTRIBUTION_HEADER").unwrap(), "0");
 
     // Les champs provider ne doivent pas fuiter.
@@ -240,4 +244,7 @@ fn multi_profile_no_slot_does_not_set_picker_vars() {
     assert!(!env.contains_key("ANTHROPIC_CUSTOM_MODEL_OPTION"));
     // Le modèle par défaut reste en composite même sans slot.
     assert_eq!(env.get("ANTHROPIC_MODEL").unwrap(), "p/a");
+    // SMALL_FAST fallback to default when no Haiku slot is defined.
+    assert_eq!(env.get("ANTHROPIC_SMALL_FAST_MODEL").unwrap(), "p/a");
+    assert_eq!(env.get("CLAUDE_CODE_SUBAGENT_MODEL").unwrap(), "p/a");
 }

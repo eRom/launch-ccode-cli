@@ -55,6 +55,14 @@ pub fn build_env_vars_single(
         "ANTHROPIC_DEFAULT_HAIKU_MODEL".into(),
         profile_name.to_string(),
     );
+    env.insert(
+        "ANTHROPIC_SMALL_FAST_MODEL".into(),
+        profile_name.to_string(),
+    );
+    env.insert(
+        "CLAUDE_CODE_SUBAGENT_MODEL".into(),
+        profile_name.to_string(),
+    );
     env.insert("CLAUDE_CODE_ATTRIBUTION_HEADER".into(), "0".into());
 
     if let Some(custom) = &profile.env {
@@ -123,6 +131,15 @@ pub fn build_env_vars_multi(
             }
         }
     }
+
+    // Set ANTHROPIC_SMALL_FAST_MODEL and CLAUDE_CODE_SUBAGENT_MODEL
+    // Prefer Haiku slot if defined, else fall back to default model
+    let small_fast = env
+        .get("ANTHROPIC_DEFAULT_HAIKU_MODEL")
+        .cloned()
+        .unwrap_or_else(|| format!("{}/{}", profile_name, profile.default));
+    env.insert("ANTHROPIC_SMALL_FAST_MODEL".into(), small_fast.clone());
+    env.insert("CLAUDE_CODE_SUBAGENT_MODEL".into(), small_fast);
 
     if let Some(custom) = &profile.env {
         for (k, v) in custom {
